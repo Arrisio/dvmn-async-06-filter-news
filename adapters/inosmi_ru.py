@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import pytest
+from urllib.parse import urlparse
 
 from .exceptions import ArticleNotFound
 from .html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags

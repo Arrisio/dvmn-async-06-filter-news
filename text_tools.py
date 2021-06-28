@@ -1,5 +1,12 @@
+import os
+from io import BytesIO
+from urllib.request import urlopen
+from zipfile import ZipFile
+
 import pymorphy2
 import string
+from bs4 import BeautifulSoup
+import settings
 
 
 def _clean_word(word):
@@ -41,6 +48,26 @@ def calculate_jaundice_rate(article_words, charged_words):
     score = len(found_charged_words) / len(article_words) * 100
 
     return round(score, 2)
+
+
+def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL):
+    resp = urlopen(charged_words_link)
+    zipfile = ZipFile(BytesIO(resp.read()))
+    resp.close()
+    charged_words = []
+    for file in zipfile.namelist():
+        if os.path.isdir(file):
+            continue
+        with zipfile.open(file) as f:
+            charged_words.extend(f.read().decode().split('\n'))
+
+    return charged_words
+
+
+def get_title_from_html(html: str):
+    soup = BeautifulSoup(html, 'html.parser')
+    title = soup.find('title')
+    return title.string
 
 
 def test_calculate_jaundice_rate():
