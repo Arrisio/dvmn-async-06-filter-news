@@ -19,7 +19,7 @@ def _clean_word(word):
 
 async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
-    await asyncio.sleep(2)
+    await asyncio.sleep(0)
     words = []
     for word in text.split():
         cleaned_word = _clean_word(word)
