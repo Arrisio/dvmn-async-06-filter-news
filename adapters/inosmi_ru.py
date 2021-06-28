@@ -9,8 +9,7 @@ from .exceptions import ArticleNotFound
 from .html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags
 
 
-async def sanitize(html, plaintext=False):
-    await asyncio.sleep(0)
+def sanitize(html, plaintext=False):
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select("article.article")
 

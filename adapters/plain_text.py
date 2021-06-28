@@ -1,4 +1,5 @@
+import asyncio
 
 
-async def sanitize(text):
+def sanitize(text):
     return text.strip()

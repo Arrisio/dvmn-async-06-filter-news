@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import urlparse
 from time import monotonic
-import async_timeout
+from async_timeout import timeout
 import anyio
 import aiohttp
 import asyncio
@@ -52,19 +52,8 @@ import timeout_decorator
 from multiprocessing import Process
 
 
-async def dodo(html,morph, sanitize):
-    # processing_article_start_time = monotonic()
-    clean_text = sanitize(html)
-    article_words = split_by_words(morph=morph, text=clean_text)
-    # processing_article_duration = monotonic() - processing_article_start_time
-    return article_words
 
 
-
-from contextlib import asynccontextmanager
-from contextvars import ContextVar
-
-tm = ContextVar('tm')
 
 async def process_article(session, morph, charged_words, url, res, title=None):
 
@@ -89,16 +78,10 @@ async def process_article(session, morph, charged_words, url, res, title=None):
 
     try:
 
-        async with async_timeout.timeout(timeout=.2) as cm:
-        # async with anyio.create_task_group() as tgg:
-            # async with anyio.fail_after(.1) as cm:
-            print(title, 'start', cm.remaining)
-
-            clean_text = await sanitize(html)
+        async with timeout(timeout=settings.PROCESS_NEWS_TIMEOUT) as cm:
+            clean_text = sanitize(html)
             article_words = await split_by_words(morph=morph, text=clean_text)
-            print(title,'ok', cm.remaining)
-
-            # print('завершилось ',title,processing_article_duration )
+            process_article_duration = settings.PROCESS_NEWS_TIMEOUT-cm.remaining
 
     except (TimeoutError, asyncio.exceptions.TimeoutError):
         print(title, 'timeout',cm.remaining)
@@ -115,7 +98,7 @@ async def process_article(session, morph, charged_words, url, res, title=None):
             title=title,
             score=score,
             words_count=len(article_words),
-            processing_article_duration=0.2-cm.remaining,
+            processing_article_duration=process_article_duration,
         )
     )
 
