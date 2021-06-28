@@ -115,7 +115,7 @@ async def process_article(session, morph, charged_words, url, res, title=None):
             title=title,
             score=score,
             words_count=len(article_words),
-            processing_article_duration=0,
+            processing_article_duration=0.2-cm.remaining,
         )
     )
 
