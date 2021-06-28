@@ -1,3 +1,5 @@
+import asyncio
+
 from bs4 import BeautifulSoup
 import requests
 import pytest
@@ -7,7 +9,8 @@ from .exceptions import ArticleNotFound
 from .html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags
 
 
-def sanitize(html, plaintext=False):
+async def sanitize(html, plaintext=False):
+    await asyncio.sleep(0)
     soup = BeautifulSoup(html, 'html.parser')
     articles = soup.select("article.article")
 

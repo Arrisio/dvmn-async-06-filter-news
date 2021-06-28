@@ -1,3 +1,4 @@
+import asyncio
 import os
 from io import BytesIO
 from urllib.request import urlopen
@@ -16,9 +17,10 @@ def _clean_word(word):
     return word
 
 
-def split_by_words(morph, text):
+async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
+    await asyncio.sleep(0)
     for word in text.split():
         cleaned_word = _clean_word(word)
         normalized_word = morph.parse(cleaned_word)[0].normal_form
@@ -50,7 +52,7 @@ def calculate_jaundice_rate(article_words, charged_words):
     return round(score, 2)
 
 
-def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL):
+def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL) -> list[str]:
     resp = urlopen(charged_words_link)
     zipfile = ZipFile(BytesIO(resp.read()))
     resp.close()
@@ -64,10 +66,14 @@ def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL):
     return charged_words
 
 
-def get_title_from_html(html: str):
-    soup = BeautifulSoup(html, 'html.parser')
-    title = soup.find('title')
-    return title.string
+def get_title_from_html(content: str):
+    soup = BeautifulSoup(content, 'html.parser')
+
+    if title := soup.find('title'):
+        return title.string
+
+    return content.split('\n')[0].strip()
+
 
 
 def test_calculate_jaundice_rate():

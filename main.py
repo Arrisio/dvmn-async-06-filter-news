@@ -61,9 +61,10 @@ async def dodo(html,morph, sanitize):
 
 
 
-async def raise_in_duration():
-    await asyncio.sleep(0)
-    raise TimeoutError
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
+
+tm = ContextVar('tm')
 
 async def process_article(session, morph, charged_words, url, res, title=None):
 
@@ -87,17 +88,20 @@ async def process_article(session, morph, charged_words, url, res, title=None):
         title = get_title_from_html(html)
 
     try:
-        async with async_timeout.timeout(timeout=.1):
-            reise_corutine = raise_in_duration()
-            processing_article_start_time = monotonic()
-            clean_text = sanitize(html)
-            article_words = split_by_words(morph=morph, text=clean_text)
-            processing_article_duration = monotonic() - processing_article_start_time
-            reise_corutine.close()
-            print('завершилось ',processing_article_duration)
 
-    except TimeoutError:
-        print('TimeoutError!!!!!!!!!!!')
+        async with async_timeout.timeout(timeout=.2) as cm:
+        # async with anyio.create_task_group() as tgg:
+            # async with anyio.fail_after(.1) as cm:
+            print(title, 'start', cm.remaining)
+
+            clean_text = await sanitize(html)
+            article_words = await split_by_words(morph=morph, text=clean_text)
+            print(title,'ok', cm.remaining)
+
+            # print('завершилось ',title,processing_article_duration )
+
+    except (TimeoutError, asyncio.exceptions.TimeoutError):
+        print(title, 'timeout',cm.remaining)
         res.append(ArticleAnalysisResult(title=title, status=ProcessingStatus.TIMEOUT))
         return
 
@@ -111,7 +115,7 @@ async def process_article(session, morph, charged_words, url, res, title=None):
             title=title,
             score=score,
             words_count=len(article_words),
-            processing_article_duration=processing_article_duration,
+            processing_article_duration=0,
         )
     )
 
