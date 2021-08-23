@@ -30,5 +30,9 @@ async def test_sanitize():
 
 
 if __name__ == '__main__':
-    asyncio.run(test_sanitize())
+    morph = pymorphy2.MorphAnalyzer()
+    d = morph.dictionary
+    ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
+    print(1)
+    # asyncio.run(test_sanitize())
 

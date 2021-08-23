@@ -1,17 +1,21 @@
 import asyncio
 import os
+import string
 from io import BytesIO
 from urllib.request import urlopen
 from zipfile import ZipFile
 
 import pymorphy2
-import string
+import pytest
+import requests
+from async_timeout import timeout
 from bs4 import BeautifulSoup
+
 import settings
 
 
 def _clean_word(word):
-    word = word.replace('«', '').replace('»', '').replace('…', '')
+    word = word.replace("«", "").replace("»", "").replace("…", "")
     # FIXME какие еще знаки пунктуации часто встречаются ?
     word = word.strip(string.punctuation)
     return word
@@ -19,24 +23,16 @@ def _clean_word(word):
 
 async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
-    await asyncio.sleep(0)
     words = []
-    for word in text.split():
-        cleaned_word = _clean_word(word)
-        normalized_word = morph.parse(cleaned_word)[0].normal_form
-        if len(normalized_word) > 2 or normalized_word == 'не':
-            words.append(normalized_word)
-    return words
-
-
-def test_split_by_words():
-    # Экземпляры MorphAnalyzer занимают 10-15Мб RAM т.к. загружают в память много данных
-    # Старайтесь организовать свой код так, чтоб создавать экземпляр MorphAnalyzer заранее и в единственном числе
-    morph = pymorphy2.MorphAnalyzer()
-
-    assert split_by_words(morph, 'Во-первых, он хочет, чтобы') == ['во-первых', 'хотеть', 'чтобы']
-
-    assert split_by_words(morph, '«Удивительно, но это стало началом!»') == ['удивительно', 'это', 'стать', 'начало']
+    async with timeout(timeout=settings.PROCESS_NEWS_TIMEOUT) as cm:
+        for word in text.split():
+            cleaned_word = _clean_word(word)
+            normalized_word = morph.parse(cleaned_word)[0].normal_form
+            if len(normalized_word) > 2 or normalized_word == "не":
+                words.append(normalized_word)
+            await asyncio.sleep(0)
+    process_article_duration = settings.PROCESS_NEWS_TIMEOUT - cm.remaining
+    return words, process_article_duration
 
 
 def calculate_jaundice_rate(article_words, charged_words):
@@ -61,21 +57,37 @@ def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL) -> list[str
         if os.path.isdir(file):
             continue
         with zipfile.open(file) as f:
-            charged_words.extend(f.read().decode().split('\n'))
+            charged_words.extend(f.read().decode().split("\n"))
 
     return charged_words
 
 
-def get_title_from_html(content: str):
-    soup = BeautifulSoup(content, 'html.parser')
+def get_title_from_response(content: str) -> str:
+    soup = BeautifulSoup(content, "html.parser")
 
-    if title := soup.find('title'):
-        return title.string
+    if title := soup.find("title"):
+        return str(title.string)
 
-    return content.split('\n')[0].strip()
+    return content.split("\n")[0].strip()
 
+
+@pytest.mark.asyncio
+async def test_split_by_words():
+    # Экземпляры MorphAnalyzer занимают 10-15Мб RAM т.к. загружают в память много данных
+    # Старайтесь организовать свой код так, чтоб создавать экземпляр MorphAnalyzer заранее и в единственном числе
+    morph = pymorphy2.MorphAnalyzer()
+
+    words, _ = await split_by_words(morph, "Во-первых, он хочет, чтобы")
+    assert words == ["во-первых", "хотеть", "чтобы"]
+
+    words, _ = await split_by_words(morph, "«Удивительно, но это стало началом!»")
+    assert words == ["удивительно", "это", "стать", "начало"]
+
+    large_text = requests.get(settings.SOME_LARGE_TEXT_URL).text
+    with pytest.raises(asyncio.exceptions.TimeoutError):
+        await split_by_words(morph, large_text)
 
 
 def test_calculate_jaundice_rate():
     assert -0.01 < calculate_jaundice_rate([], []) < 0.01
-    assert 33.0 < calculate_jaundice_rate(['все', 'аутсайдер', 'побег'], ['аутсайдер', 'банкротство']) < 34.0
+    assert 33.0 < calculate_jaundice_rate(["все", "аутсайдер", "побег"], ["аутсайдер", "банкротство"]) < 34.0
