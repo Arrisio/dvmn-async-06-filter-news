@@ -45,7 +45,7 @@ python server.py
 Команды для запуска тестов:
 
 ```
-python -m pytest adapters/inosmi_ru.py
+python -m pytest adapters/inosmi_ru_test.py
 ```
 
 ```
