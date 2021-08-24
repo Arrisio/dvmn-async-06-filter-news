@@ -1,19 +1,14 @@
-from dataclasses import dataclass, asdict
+import asyncio
+import logging
+from dataclasses import dataclass
 from enum import Enum
+from sys import platform
 from typing import List, Optional
 from urllib.parse import urlparse
-import logging
 
-import pytest
-
-import anyio
 import aiohttp
-import asyncio
-from sys import platform
-
 import pymorphy2
 from anyio import create_task_group
-
 
 import settings
 from adapters import SANITIZERS
@@ -38,7 +33,6 @@ class ArticleAnalysisResult:
     def __repr__(self):
         # if self.status == ProcessingStatus.OK:
         return f"Заголовок: {self.title}\nСтатус: {self.status.value}\nРейтинг: {self.score}\nСлов в рейтинге: {self.words_count}"
-
 
 
 async def fetch(session, url):
@@ -71,7 +65,9 @@ async def process_article(
         process_article_result_list.append(ArticleAnalysisResult(title=url, url=url, status=ProcessingStatus.TIMEOUT))
         return
     except aiohttp.ClientError as err:
-        process_article_result_list.append(ArticleAnalysisResult(title=str(err), url=url, status=ProcessingStatus.FETCH_ERROR))
+        process_article_result_list.append(
+            ArticleAnalysisResult(title=str(err), url=url, status=ProcessingStatus.FETCH_ERROR)
+        )
         return
 
     if not title:
@@ -80,9 +76,9 @@ async def process_article(
     try:
         clean_text = sanitize(content)
         article_words, process_article_duration = await split_by_words(morph=morph, text=clean_text)
-        logging.info(f"Анализ закончен за {process_article_duration:.2f} сек. Статья: "+title)
+        logging.info(f"Анализ закончен за {process_article_duration:.2f} сек. Статья: " + title)
     except asyncio.exceptions.TimeoutError:
-        logging.info("Анализ не был проведен. Статья: "+title)
+        logging.info("Анализ не был проведен. Статья: " + title)
         process_article_result_list.append(ArticleAnalysisResult(title=title, url=url, status=ProcessingStatus.TIMEOUT))
         return
 

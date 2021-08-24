@@ -5,7 +5,7 @@ from dataclasses import asdict
 from aiohttp import web
 from settings import MAX_URL_PER_REQUEST
 
-from main import process_articles_from_urls
+from process_articles import process_articles_from_urls
 
 routes = web.RouteTableDef()
 

@@ -1,6 +1,6 @@
 CHARGED_WORDS_URL = "https://dvmn.org/filer/canonical/1561981914/163/"
-FETCH_NEWS_TIMEOUT = 1
-PROCESS_NEWS_TIMEOUT = 1
+FETCH_NEWS_TIMEOUT = 5
+PROCESS_NEWS_TIMEOUT = 5
 TEST_ARTICLE_URLS = [
     "https://inosmi.ru/social/20210625/249988253.html",
     "https://inosmi.ru/politic/20210625/249990364.html",
