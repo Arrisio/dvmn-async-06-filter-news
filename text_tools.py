@@ -28,8 +28,8 @@ async def split_by_words(morph, text):
             if len(normalized_word) > 2 or normalized_word == "не":
                 words.append(normalized_word)
             await asyncio.sleep(0)
-    process_article_duration = settings.PROCESS_NEWS_TIMEOUT - cm.remaining
-    return words, process_article_duration
+
+    return words
 
 
 def calculate_jaundice_rate(article_words, charged_words):

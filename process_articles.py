@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 from sys import platform
+from time import monotonic
 from typing import List, Optional
 from urllib.parse import urlparse
 
@@ -57,7 +58,7 @@ async def process_article(
     process_article_results: list,
     title: str = None,
 ):
-
+    start_article_processing_time = monotonic()
     article_analysis_result = ArticleAnalysisResult(url=url)
 
     news_domain = urlparse(url).netloc
@@ -86,12 +87,10 @@ async def process_article(
 
     try:
         clean_text = sanitize(content)
-        article_words, process_article_duration = await split_by_words(
-            morph=morph, text=clean_text
-        )
+        article_words = await split_by_words(morph=morph, text=clean_text)
         article_analysis_result.words_count = len(article_words)
         logging.info(
-            f"Анализ закончен за {process_article_duration:.2f} сек. Статья: "
+            f"Анализ закончен за {monotonic()-start_article_processing_time:.2f} сек. Статья: "
             + article_analysis_result.title
         )
     except asyncio.exceptions.TimeoutError:

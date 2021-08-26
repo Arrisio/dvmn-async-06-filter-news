@@ -10,10 +10,10 @@ from conftest import morph
 
 @pytest.mark.asyncio
 async def test_split_by_words(morph):
-    words, _ = await split_by_words(morph, "Во-первых, он хочет, чтобы")
+    words = await split_by_words(morph, "Во-первых, он хочет, чтобы")
     assert words == ["во-первых", "хотеть", "чтобы"]
 
-    words, _ = await split_by_words(
+    words = await split_by_words(
         morph, "«Удивительно, но это стало началом!»"
     )
     assert words == ["удивительно", "это", "стать", "начало"]
