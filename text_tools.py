@@ -45,16 +45,14 @@ def calculate_jaundice_rate(article_words, charged_words):
     return round(score, 2)
 
 
-def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL) -> list[str]:
-    resp = urlopen(charged_words_link)
-    zipfile = ZipFile(BytesIO(resp.read()))
-    resp.close()
+def get_charged_words() -> list[str]:
     charged_words = []
-    for file in zipfile.namelist():
-        if os.path.isdir(file):
-            continue
-        with zipfile.open(file) as f:
-            charged_words.extend(f.read().decode().splitlines())
+    with ZipFile(settings.CHARGED_WORDS_FILE_PATH) as zipfile:
+        for file in zipfile.namelist():
+            if os.path.isdir(file):
+                continue
+            with zipfile.open(file) as f:
+                charged_words.extend(f.read().decode().splitlines())
 
     return charged_words
 

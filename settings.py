@@ -1,4 +1,4 @@
-CHARGED_WORDS_URL = "https://dvmn.org/filer/canonical/1561981914/163/"
+CHARGED_WORDS_FILE_PATH = "charged_dict.zip"
 FETCH_NEWS_TIMEOUT = 5
 PROCESS_NEWS_TIMEOUT = 5
 TEST_ARTICLE_URLS = [
