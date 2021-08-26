@@ -38,7 +38,9 @@ def calculate_jaundice_rate(article_words, charged_words):
     if not article_words:
         return 0.0
 
-    found_charged_words = [word for word in article_words if word in set(charged_words)]
+    found_charged_words = [
+        word for word in article_words if word in set(charged_words)
+    ]
 
     score = len(found_charged_words) / len(article_words) * 100
 
@@ -64,5 +66,3 @@ def get_title_from_response(content: str) -> str:
         return str(title.string)
 
     return content.split("\n")[0].strip()
-
-

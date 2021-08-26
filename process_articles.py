@@ -12,7 +12,12 @@ from anyio import create_task_group
 
 import settings
 from adapters import SANITIZERS
-from text_tools import split_by_words, calculate_jaundice_rate, get_charged_words, get_title_from_response
+from text_tools import (
+    split_by_words,
+    calculate_jaundice_rate,
+    get_charged_words,
+    get_title_from_response,
+)
 
 
 class ProcessingStatus(str, Enum):
@@ -81,9 +86,14 @@ async def process_article(
 
     try:
         clean_text = sanitize(content)
-        article_words, process_article_duration = await split_by_words(morph=morph, text=clean_text)
+        article_words, process_article_duration = await split_by_words(
+            morph=morph, text=clean_text
+        )
         article_analysis_result.words_count = len(article_words)
-        logging.info(f"Анализ закончен за {process_article_duration:.2f} сек. Статья: " + article_analysis_result.title)
+        logging.info(
+            f"Анализ закончен за {process_article_duration:.2f} сек. Статья: "
+            + article_analysis_result.title
+        )
     except asyncio.exceptions.TimeoutError:
         logging.info("Анализ не был проведен. Статья: " + title)
         article_analysis_result.status = ProcessingStatus.TIMEOUT
@@ -101,13 +111,24 @@ async def process_article(
 
 
 async def process_articles_from_urls(
-    urls: List[dict], charged_words: list = get_charged_words(), morph=pymorphy2.MorphAnalyzer()
+    urls: List[dict],
+    charged_words: list = get_charged_words(),
+    morph=pymorphy2.MorphAnalyzer(),
 ):
     process_article_results = []
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(settings.FETCH_NEWS_TIMEOUT)) as session:
+    async with aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(settings.FETCH_NEWS_TIMEOUT)
+    ) as session:
         async with create_task_group() as tg:
             for url in urls:
-                tg.start_soon(process_article, session, morph, charged_words, url, process_article_results)
+                tg.start_soon(
+                    process_article,
+                    session,
+                    morph,
+                    charged_words,
+                    url,
+                    process_article_results,
+                )
 
     return process_article_results
 

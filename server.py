@@ -14,17 +14,24 @@ async def get_articles_scores(request):
     try:
         urls = request.query["urls"].split(",")
     except KeyError:
-        raise web.HTTPUnprocessableEntity(text='{"error": "required URLs parameter"}', content_type="application/json")
+        raise web.HTTPUnprocessableEntity(
+            text='{"error": "required URLs parameter"}',
+            content_type="application/json",
+        )
 
     if len(urls) > MAX_URL_PER_REQUEST:
-        response_text = json.dumps({"error": f"too many urls in request, should be {MAX_URL_PER_REQUEST} or less"})
+        response_text = json.dumps(
+            {
+                "error": f"too many urls in request, should be {MAX_URL_PER_REQUEST} or less"
+            }
+        )
         raise web.HTTPBadRequest(
-            text=response_text,
-            content_type="application/json"
+            text=response_text, content_type="application/json"
         )
 
     return web.json_response(
-        [asdict(score) for score in await process_articles_from_urls(urls)], content_type="application/json"
+        [asdict(score) for score in await process_articles_from_urls(urls)],
+        content_type="application/json",
     )
 
 
