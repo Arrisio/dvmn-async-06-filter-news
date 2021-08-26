@@ -1,11 +1,10 @@
 import json
-import os
 from dataclasses import asdict
 
 from aiohttp import web
-from settings import MAX_URL_PER_REQUEST
 
 from process_articles import process_articles_from_urls
+from settings import MAX_URL_PER_REQUEST
 
 routes = web.RouteTableDef()
 
@@ -20,8 +19,8 @@ async def get_articles_scores(request):
     if len(urls) > MAX_URL_PER_REQUEST:
         response_text = json.dumps({"error": f"too many urls in request, should be {MAX_URL_PER_REQUEST} or less"})
         raise web.HTTPBadRequest(
-            text=response_text, content_type="application/json"
-            #  json={"error": f"too many urls in request, should be {MAX_URL_PER_REQUEST} or less"}
+            text=response_text,
+            content_type="application/json"
         )
 
     return web.json_response(
