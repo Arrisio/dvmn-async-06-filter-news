@@ -41,7 +41,7 @@ import process_articles
 async def test_process_article(url, expected, session, morph, charged_words):
     results = []
     await process_articles.process_article(
-        session=session, morph=morph, charged_words=charged_words, url=url, process_article_result_list=results
+        session=session, morph=morph, charged_words=charged_words, url=url, process_article_results=results
     )
 
     assert results[0] == expected

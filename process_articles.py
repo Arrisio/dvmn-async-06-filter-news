@@ -49,7 +49,7 @@ async def process_article(
     morph: pymorphy2.MorphAnalyzer,
     charged_words: list,
     url: str,
-    process_article_result_list: list,
+    process_article_results: list,
     title: str = None,
 ):
 
@@ -61,7 +61,7 @@ async def process_article(
     except KeyError:
         article_analysis_result.status = ProcessingStatus.PARSING_ERROR
         article_analysis_result.title = f"Статья на {news_domain}"
-        process_article_result_list.append(article_analysis_result)
+        process_article_results.append(article_analysis_result)
         return
 
     try:
@@ -69,12 +69,12 @@ async def process_article(
     except asyncio.exceptions.TimeoutError:
         article_analysis_result.status = ProcessingStatus.TIMEOUT
         article_analysis_result.title = url
-        process_article_result_list.append(article_analysis_result)
+        process_article_results.append(article_analysis_result)
         return
     except aiohttp.ClientError as err:
         article_analysis_result.status = ProcessingStatus.FETCH_ERROR
         article_analysis_result.title = str(err)
-        process_article_result_list.append(article_analysis_result)
+        process_article_results.append(article_analysis_result)
         return
 
     article_analysis_result.title = title or get_title_from_response(content)
@@ -88,7 +88,7 @@ async def process_article(
         logging.info("Анализ не был проведен. Статья: " + title)
         article_analysis_result.status = ProcessingStatus.TIMEOUT
 
-        process_article_result_list.append(article_analysis_result)
+        process_article_results.append(article_analysis_result)
         return
 
     article_analysis_result.score = calculate_jaundice_rate(
@@ -97,19 +97,19 @@ async def process_article(
     )
     article_analysis_result.status = ProcessingStatus.OK
 
-    process_article_result_list.append(article_analysis_result)
+    process_article_results.append(article_analysis_result)
 
 
 async def process_articles_from_urls(
     urls: List[dict], charged_words: list = get_charged_words(), morph=pymorphy2.MorphAnalyzer()
 ):
-    process_article_result_list = []
+    process_article_results = []
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(settings.FETCH_NEWS_TIMEOUT)) as session:
         async with create_task_group() as tg:
             for url in urls:
-                tg.start_soon(process_article, session, morph, charged_words, url, process_article_result_list)
+                tg.start_soon(process_article, session, morph, charged_words, url, process_article_results)
 
-    return process_article_result_list
+    return process_article_results
 
 
 async def main():
