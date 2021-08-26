@@ -20,19 +20,22 @@ class ProcessingStatus(str, Enum):
     FETCH_ERROR = "FETCH_ERROR"
     PARSING_ERROR = "PARSING_ERROR"
     TIMEOUT = "TIMEOUT"
+    PENDING = "PENDING"
 
 
 @dataclass
 class ArticleAnalysisResult:
-    title: str
+    title: str = "unknown"
     url: str = ""
-    status: ProcessingStatus = ProcessingStatus.OK
+    status: ProcessingStatus = ProcessingStatus.PENDING
     score: Optional[float] = None
     words_count: Optional[int] = None
 
     def __repr__(self):
-        # if self.status == ProcessingStatus.OK:
-        return f"Заголовок: {self.title}\nСтатус: {self.status.value}\nРейтинг: {self.score}\nСлов в рейтинге: {self.words_count}"
+        return f"""Заголовок: {self.title}
+Статус: {self.status.value}
+Рейтинг: {self.score}
+Слов в рейтинге: {self.words_count}"""
 
 
 async def fetch(session, url):
@@ -50,51 +53,51 @@ async def process_article(
     title: str = None,
 ):
 
+    article_analysis_result = ArticleAnalysisResult(url=url)
+
     news_domain = urlparse(url).netloc
     try:
         sanitize = SANITIZERS[news_domain]
     except KeyError:
-        process_article_result_list.append(
-            ArticleAnalysisResult(title=f"Статья на {news_domain}", url=url, status=ProcessingStatus.PARSING_ERROR)
-        )
+        article_analysis_result.status = ProcessingStatus.PARSING_ERROR
+        article_analysis_result.title = f"Статья на {news_domain}"
+        process_article_result_list.append(article_analysis_result)
         return
 
     try:
         content = await fetch(session, url)
     except asyncio.exceptions.TimeoutError:
-        process_article_result_list.append(ArticleAnalysisResult(title=url, url=url, status=ProcessingStatus.TIMEOUT))
+        article_analysis_result.status = ProcessingStatus.TIMEOUT
+        article_analysis_result.title = url
+        process_article_result_list.append(article_analysis_result)
         return
     except aiohttp.ClientError as err:
-        process_article_result_list.append(
-            ArticleAnalysisResult(title=str(err), url=url, status=ProcessingStatus.FETCH_ERROR)
-        )
+        article_analysis_result.status = ProcessingStatus.FETCH_ERROR
+        article_analysis_result.title = str(err)
+        process_article_result_list.append(article_analysis_result)
         return
 
-    if not title:
-        title = get_title_from_response(content)
+    article_analysis_result.title = title or get_title_from_response(content)
 
     try:
         clean_text = sanitize(content)
         article_words, process_article_duration = await split_by_words(morph=morph, text=clean_text)
-        logging.info(f"Анализ закончен за {process_article_duration:.2f} сек. Статья: " + title)
+        article_analysis_result.words_count = len(article_words)
+        logging.info(f"Анализ закончен за {process_article_duration:.2f} сек. Статья: " + article_analysis_result.title)
     except asyncio.exceptions.TimeoutError:
         logging.info("Анализ не был проведен. Статья: " + title)
-        process_article_result_list.append(ArticleAnalysisResult(title=title, url=url, status=ProcessingStatus.TIMEOUT))
+        article_analysis_result.status = ProcessingStatus.TIMEOUT
+
+        process_article_result_list.append(article_analysis_result)
         return
 
-    score = calculate_jaundice_rate(
+    article_analysis_result.score = calculate_jaundice_rate(
         article_words=article_words,
         charged_words=charged_words,
     )
+    article_analysis_result.status = ProcessingStatus.OK
 
-    process_article_result_list.append(
-        ArticleAnalysisResult(
-            title=title,
-            score=score,
-            words_count=len(article_words),
-            url=url,
-        )
-    )
+    process_article_result_list.append(article_analysis_result)
 
 
 async def process_articles_from_urls(
