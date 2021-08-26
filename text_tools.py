@@ -54,7 +54,7 @@ def get_charged_words(charged_words_link=settings.CHARGED_WORDS_URL) -> list[str
         if os.path.isdir(file):
             continue
         with zipfile.open(file) as f:
-            charged_words.extend(f.read().decode().split("\n"))
+            charged_words.extend(f.read().decode().splitlines())
 
     return charged_words
 
