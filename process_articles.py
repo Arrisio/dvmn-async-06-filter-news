@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass, replace
 from enum import Enum
 from sys import platform
+from textwrap import dedent
 from time import monotonic
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -38,10 +39,11 @@ class ArticleAnalysisResult:
     words_count: Optional[int] = None
 
     def __repr__(self):
-        return f"""Заголовок: {self.title}
-Статус: {self.status.value}
-Рейтинг: {self.score}
-Слов в рейтинге: {self.words_count}"""
+        return dedent(f"""\
+            Заголовок: {self.title}
+            Статус: {self.status.value}
+            Рейтинг: {self.score}
+            Слов в рейтинге: {self.words_count}""")
 
 
 async def fetch(session, url):
