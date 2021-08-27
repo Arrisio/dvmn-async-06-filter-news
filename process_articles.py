@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from sys import platform
 from time import monotonic
@@ -65,22 +65,34 @@ async def process_article(
     try:
         sanitize = SANITIZERS[news_domain]
     except KeyError:
-        article_analysis_result.status = ProcessingStatus.PARSING_ERROR
-        article_analysis_result.title = f"Статья на {news_domain}"
-        process_article_results.append(article_analysis_result)
+        process_article_results.append(
+            replace(
+                article_analysis_result,
+                status=ProcessingStatus.PARSING_ERROR,
+                title=f"Статья на {news_domain}",
+            )
+        )
         return
 
     try:
         content = await fetch(session, url)
     except asyncio.exceptions.TimeoutError:
-        article_analysis_result.status = ProcessingStatus.TIMEOUT
-        article_analysis_result.title = url
-        process_article_results.append(article_analysis_result)
+        process_article_results.append(
+            replace(
+                article_analysis_result,
+                status=ProcessingStatus.TIMEOUT,
+                title=url,
+            )
+        )
         return
     except aiohttp.ClientError as err:
-        article_analysis_result.status = ProcessingStatus.FETCH_ERROR
-        article_analysis_result.title = str(err)
-        process_article_results.append(article_analysis_result)
+        process_article_results.append(
+            replace(
+                article_analysis_result,
+                status=ProcessingStatus.FETCH_ERROR,
+                title=str(err),
+            )
+        )
         return
 
     article_analysis_result.title = title or get_title_from_response(content)
@@ -95,18 +107,21 @@ async def process_article(
         )
     except asyncio.exceptions.TimeoutError:
         logging.info("Анализ не был проведен. Статья: " + title)
-        article_analysis_result.status = ProcessingStatus.TIMEOUT
-
-        process_article_results.append(article_analysis_result)
+        process_article_results.append(
+            replace(article_analysis_result, status=ProcessingStatus.TIMEOUT)
+        )
         return
 
-    article_analysis_result.score = calculate_jaundice_rate(
-        article_words=article_words,
-        charged_words=charged_words,
+    process_article_results.append(
+        replace(
+            article_analysis_result,
+            status=ProcessingStatus.OK,
+            score=calculate_jaundice_rate(
+                article_words=article_words,
+                charged_words=charged_words,
+            ),
+        )
     )
-    article_analysis_result.status = ProcessingStatus.OK
-
-    process_article_results.append(article_analysis_result)
 
 
 async def process_articles_from_urls(
