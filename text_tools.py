@@ -18,10 +18,12 @@ def _clean_word(word):
     return word
 
 
-async def split_by_words(morph, text):
+async def split_by_words(
+    morph, text, timeout_duration=settings.PROCESS_NEWS_TIMEOUT
+):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
-    async with timeout(timeout=settings.PROCESS_NEWS_TIMEOUT):
+    async with timeout(timeout=timeout_duration):
         for word in text.split():
             cleaned_word = _clean_word(word)
             normalized_word = morph.parse(cleaned_word)[0].normal_form
